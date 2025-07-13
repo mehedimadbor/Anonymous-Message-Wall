@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Anonymous Message Wall with Info</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #121212;
+      color: #eee;
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+    h1 {
+      margin-bottom: 20px;
+      color: #00ffd5;
+    }
+    form, #checkForm {
+      width: 100%;
+      max-width: 600px;
+      margin-bottom: 30px;
+    }
+    input, textarea {
+      width: 100%;
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      font-size: 1rem;
+      background: #222;
+      color: #eee;
+    }
+    button {
+      margin-top: 10px;
+      width: 100%;
+      padding: 12px;
+      font-size: 1rem;
+      background: #00ffd5;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      color: #000;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #00c1a3;
+    }
+    #messages, #myMessages {
+      width: 100%;
+      max-width: 600px;
+      background: #1f1f1f;
+      border-radius: 10px;
+      padding: 15px;
+      box-sizing: border-box;
+      max-height: 400px;
+      overflow-y: auto;
+      margin-bottom: 30px;
+    }
+    .message {
+      background: #2a2a2a;
+      border-left: 4px solid #00ffd5;
+      padding: 10px 15px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      word-wrap: break-word;
+    }
+    .reactions {
+      display: flex;
+      gap: 15px;
+      margin-top: 10px;
+    }
+    .reactions button {
+      background: #2e2e2e;
+      color: #ccc;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.3s, transform 0.2s;
+    }
+    .reactions button:hover {
+      background: #00ffd5;
+      color: #000;
+      transform: scale(1.05);
+    }
+    .footer {
+      margin-top: auto;
+      padding: 10px;
+      font-size: 0.8rem;
+      color: #555;
+    }
+    #myMessagesTitle {
+      color: #00ffd5;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    /* Info modal styles */
+    #infoBtn {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      background: #00ffd5;
+      color: #000;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 1.5rem;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 0 8px #00ffd5;
+      transition: background 0.3s;
+      z-index: 1000;
+    }
+    #infoBtn:hover {
+      background: #00c1a3;
+    }
+
+    #infoModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right:0; bottom:0;
+      background: rgba(0,0,0,0.75);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    #infoContent {
+      background: #222;
+      border-radius: 12px;
+      max-width: 600px;
+      width: 100%;
+      padding: 25px 30px;
+      color: #eee;
+      box-shadow: 0 0 20px #00ffd5;
+      position: relative;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    #closeInfo {
+      position: absolute;
+      top: 12px;
+      right: 15px;
+      background: transparent;
+      border: none;
+      font-size: 1.5rem;
+      color: #00ffd5;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    #closeInfo:hover {
+      color: #00c1a3;
+    }
+  </style>
+</head>
+<body>
+  <h1>Anonymous Message Wall</h1>
+
+  <!-- Info button -->
+  <button id="infoBtn" aria-label="Info">i</button>
+
+  <!-- Message Sending Form -->
+  <form id="messageForm">
+    <input type="text" id="fromInput" placeholder="Your name (optional)" />
+    <input type="text" id="toInput" placeholder="To whom?" required />
+    <textarea id="messageInput" placeholder="Write your message here..." required></textarea>
+    <button type="submit">Send</button>
+  </form>
+
+  <div id="messages"></div>
+
+  <!-- Check Messages Form -->
+  <form id="checkForm">
+    <input type="text" id="checkName" placeholder="Enter your name to check messages" required />
+    <button type="submit">Check My Messages</button>
+  </form>
+
+  <h2 id="myMessagesTitle" style="display:none;">Messages for you</h2>
+  <div id="myMessages"></div>
+
+  <div class="footer">One person can react only once per message. All messages are public.</div>
+
+  <!-- Info Modal -->
+  <div id="infoModal" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
+    <div id="infoContent">
+      <button id="closeInfo" aria-label="Close Info">&times;</button>
+      <h2 id="infoTitle">How to Use This Site</h2>
+      <p>Welcome to the Anonymous Message Wall! Here's how you can use it:</p>
+      <ul>
+        <li><strong>Send Message:</strong> Write your name (optional), the name of the person you want to send a message to, and your message. Then click "Send".</li>
+        <li><strong>Check Messages:</strong> Enter your name in the "Check My Messages" box and click the button to see all messages sent to you.</li>
+        <li><strong>React to Messages:</strong> You can like 👍 or dislike 👎 messages, but only once per message.</li>
+        <li><strong>All messages are public</strong>, but you can remain anonymous by leaving your name blank.</li>
+      </ul>
+      <p>Enjoy and communicate freely!</p>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('messageForm');
+    const messageInput = document.getElementById('messageInput');
+    const messagesDiv = document.getElementById('messages');
+    const fromInput = document.getElementById('fromInput');
+    const toInput = document.getElementById('toInput');
+
+    const checkForm = document.getElementById('checkForm');
+    const checkNameInput = document.getElementById('checkName');
+    const myMessagesDiv = document.getElementById('myMessages');
+    const myMessagesTitle = document.getElementById('myMessagesTitle');
+
+    const infoBtn = document.getElementById('infoBtn');
+    const infoModal = document.getElementById('infoModal');
+    const closeInfo = document.getElementById('closeInfo');
+
+    let messages = JSON.parse(localStorage.getItem('messagesWithReacts') || '[]');
+    let reacted = JSON.parse(localStorage.getItem('reactedMessages') || '[]');
+
+    function escapeHtml(text) {
+      const map = {
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+      };
+      return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+
+    function renderMessages() {
+      messagesDiv.innerHTML = '';
+      if (messages.length === 0) {
+        messagesDiv.innerHTML = '<p style="text-align:center; color:#777;">No messages yet.</p>';
+        return;
+      }
+
+      messages.slice().reverse().forEach((msg, i) => {
+        const index = messages.length - 1 - i;
+        const date = new Date(msg.timestamp);
+        const formattedDate = date.toLocaleString();
+        const from = msg.from ? escapeHtml(msg.from) : 'Anonymous';
+        const to = escapeHtml(msg.to);
+        const message = escapeHtml(msg.text);
+
+        const div = document.createElement('div');
+        div.className = 'message';
+        div.innerHTML = `
+          <p><strong>To:</strong> ${to}</p>
+          <p>${message}</p>
+          <small style="color:#aaa;">From: ${from} | ${formattedDate}</small>
+          <div class="reactions">
+            <button onclick="react(${index}, 'like')" aria-label="Like">👍 <span>${msg.likes || 0}</span></button>
+            <button onclick="react(${index}, 'dislike')" aria-label="Dislike">👎 <span>${msg.dislikes || 0}</span></button>
+          </div>
+        `;
+        messagesDiv.appendChild(div);
+      });
+    }
+
+    function react(index, type) {
+      let reacted = JSON.parse(localStorage.getItem('reactedMessages') || '[]');
+      if (reacted.includes(index)) {
+        alert("You have already reacted to this message.");
+        return;
+      }
+
+      if (type === 'like') {
+        messages[index].likes = (messages[index].likes || 0) + 1;
+      } else if (type === 'dislike') {
+        messages[index].dislikes = (messages[index].dislikes || 0) + 1;
+      }
+
+      reacted.push(index);
+      localStorage.setItem('reactedMessages', JSON.stringify(reacted));
+      localStorage.setItem('messagesWithReacts', JSON.stringify(messages));
+      renderMessages();
+    }
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const text = messageInput.value.trim();
+      const from = fromInput.value.trim();
+      const to = toInput.value.trim();
+
+      if (text.length === 0 || to.length === 0) {
+        alert('Please write a message and mention whom it is for.');
+        return;
+      }
+
+      const messageObj = {
+        text,
+        from,
+        to,
+        timestamp: new Date().toISOString(),
+        likes: 0,
+        dislikes: 0
+      };
+
+      messages.push(messageObj);
+      localStorage.setItem('messagesWithReacts', JSON.stringify(messages));
+
+      messageInput.value = '';
+      toInput.value = '';
+      fromInput.value = '';
+      renderMessages();
+      clearMyMessages();
+    });
+
+    checkForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const name = checkNameInput.value.trim();
+      if (name.length === 0) {
+        alert("Please enter your name to check messages.");
+        return;
+      }
+      showMyMessages(name);
+    });
+
+    function showMyMessages(name) {
+      const filtered = messages.filter(m => m.to.toLowerCase() === name.toLowerCase());
+      myMessagesDiv.innerHTML = '';
+      if (filtered.length === 0) {
+        myMessagesDiv.innerHTML = '<p style="text-align:center; color:#777;">No messages found for you.</p>';
+      } else {
+        filtered.forEach(msg => {
+          const date = new Date(msg.timestamp);
+          const formattedDate = date.toLocaleString();
+          const from = msg.from ? escapeHtml(msg.from) : 'Anonymous';
+          const message = escapeHtml(msg.text);
+          const div = document.createElement('div');
+          div.className = 'message';
+          div.innerHTML = `
+            <p><strong>From:</strong> ${from}</p>
+            <p>${message}</p>
+            <small style="color:#aaa;">Received: ${formattedDate}</small>
+          `;
+          myMessagesDiv.appendChild(div);
+        });
+      }
+      myMessagesTitle.style.display = 'block';
+    }
+
+    function clearMyMessages() {
+      myMessagesDiv.innerHTML = '';
+      myMessagesTitle.style.display = 'none';
+      checkNameInput.value = '';
+    }
+
+    infoBtn.addEventListener('click', () => {
+      infoModal.style.display = 'flex';
+    });
+
+    closeInfo.addEventListener('click', () => {
+      infoModal.style.display = 'none';
+    });
+
+    window.addEventListener('click', e => {
+      if (e.target === infoModal) {
+        infoModal.style.display = 'none';
+      }
+    });
+
+    // Initial render of all messages
+    renderMessages();
+
+    // Make react function global so inline onclick works
+    window.react = react;
+  </script>
+</body>
+</html>
