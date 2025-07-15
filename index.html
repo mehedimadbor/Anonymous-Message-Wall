@@ -3,293 +3,307 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Anonymous Message Wall with Admin</title>
+  <title>Message Board with Reactions (Session Storage)</title>
   <style>
+    /* --- Reset & base --- */
+    * {
+      box-sizing: border-box;
+    }
     body {
       font-family: Arial, sans-serif;
-      background: #121212;
-      color: #eee;
-      margin: 0;
-      padding: 20px;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      position: relative;
+      margin: 1rem auto;
+      max-width: 700px;
+      background: #f0f0f5;
+      color: #333;
+      padding: 1rem;
     }
-    h1 {
-      margin-bottom: 20px;
-      color: #00ffd5;
+
+    h1, h2 {
+      text-align: center;
+      color: #222;
     }
-    form, #checkForm {
+
+    /* --- Forms --- */
+    form {
+      background: #fff;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1rem;
+      border-radius: 6px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-top: 0.8rem;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    textarea {
       width: 100%;
-      max-width: 600px;
-      margin-bottom: 30px;
-    }
-    input, textarea {
-      width: 100%;
-      margin: 5px 0;
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
+      padding: 0.5rem;
+      margin-top: 0.3rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
       font-size: 1rem;
-      background: #222;
-      color: #eee;
+      resize: vertical;
+      transition: border-color 0.3s ease;
     }
+    input[type="text"]:focus,
+    input[type="password"]:focus,
+    textarea:focus {
+      border-color: #007bff;
+      outline: none;
+      box-shadow: 0 0 4px #007bff;
+    }
+    textarea {
+      min-height: 80px;
+    }
+
     button {
-      margin-top: 10px;
-      width: 100%;
-      padding: 12px;
-      font-size: 1rem;
-      background: #00ffd5;
+      margin-top: 1rem;
+      padding: 0.6rem 1.2rem;
+      background-color: #007bff;
+      color: white;
       border: none;
-      border-radius: 10px;
+      border-radius: 4px;
       cursor: pointer;
-      color: #000;
-      font-weight: bold;
-      transition: background 0.3s;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: background-color 0.3s ease;
     }
-    button:hover {
-      background: #00c1a3;
+    button:hover,
+    button:focus {
+      background-color: #0056b3;
+      outline: none;
     }
-    #messages, #myMessages {
-      width: 100%;
-      max-width: 600px;
-      background: #1f1f1f;
-      border-radius: 10px;
-      padding: 15px;
-      box-sizing: border-box;
-      max-height: 400px;
-      overflow-y: auto;
-      margin-bottom: 30px;
+
+    /* --- Messages --- */
+    #messages {
+      margin-top: 1rem;
     }
     .message {
-      background: #2a2a2a;
-      border-left: 4px solid #00ffd5;
-      padding: 10px 15px;
-      margin-bottom: 10px;
+      background: white;
+      padding: 1rem;
+      margin-bottom: 1rem;
       border-radius: 6px;
-      word-wrap: break-word;
+      box-shadow: 0 0 6px rgba(0,0,0,0.1);
       position: relative;
+      word-wrap: break-word;
     }
+    .message p {
+      margin: 0.3rem 0;
+      line-height: 1.4;
+    }
+    .message small {
+      color: #999;
+      font-size: 0.85rem;
+    }
+
+    /* --- Reactions --- */
     .reactions {
-      display: flex;
-      gap: 15px;
-      margin-top: 10px;
+      margin-top: 0.8rem;
     }
     .reactions button {
-      background: #2e2e2e;
-      color: #ccc;
+      background: transparent;
       border: none;
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 0.95rem;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: background 0.3s, transform 0.2s;
+      font-size: 1.25rem;
+      margin-right: 1rem;
+      padding: 0;
+      color: #444;
+      transition: color 0.2s ease;
     }
-    .reactions button:hover {
-      background: #00ffd5;
-      color: #000;
-      transform: scale(1.05);
+    .reactions button:hover,
+    .reactions button:focus {
+      color: #007bff;
+      outline: none;
     }
-    .footer {
-      margin-top: auto;
-      padding: 10px;
-      font-size: 0.8rem;
-      color: #555;
-    }
-    #myMessagesTitle {
-      color: #00ffd5;
-      margin-bottom: 10px;
-      text-align: center;
-    }
-    /* Delete button style */
+
+    /* --- Delete button (admin) --- */
     .delete-btn {
       position: absolute;
       top: 10px;
       right: 10px;
-      background: #ff4c4c;
+      background-color: #dc3545;
       border: none;
-      color: #fff;
-      border-radius: 6px;
-      padding: 5px 8px;
-      cursor: pointer;
-      font-weight: bold;
+      color: white;
       font-size: 0.85rem;
-      transition: background 0.3s;
-    }
-    .delete-btn:hover {
-      background: #d43535;
-    }
-    /* Info modal styles */
-    #infoBtn {
-      position: fixed;
-      top: 15px;
-      right: 15px;
-      background: #00ffd5;
-      color: #000;
-      border: none;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      font-size: 1.5rem;
-      font-weight: bold;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
       cursor: pointer;
-      box-shadow: 0 0 8px #00ffd5;
-      transition: background 0.3s;
-      z-index: 1000;
+      transition: background-color 0.3s ease;
     }
-    #infoBtn:hover {
-      background: #00c1a3;
+    .delete-btn:hover,
+    .delete-btn:focus {
+      background-color: #b02a37;
+      outline: none;
     }
 
+    /* --- Modal --- */
     #infoModal {
       display: none;
       position: fixed;
-      top: 0; left: 0; right:0; bottom:0;
-      background: rgba(0,0,0,0.75);
-      z-index: 2000;
+      z-index: 1000;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
       justify-content: center;
       align-items: center;
-      padding: 20px;
-      box-sizing: border-box;
     }
-    #infoContent {
-      background: #222;
-      border-radius: 12px;
-      max-width: 600px;
-      width: 100%;
-      padding: 25px 30px;
-      color: #eee;
-      box-shadow: 0 0 20px #00ffd5;
+    #infoModal.show {
+      display: flex;
+    }
+    #infoModalContent {
+      background: white;
+      padding: 1.5rem 2rem;
+      border-radius: 8px;
+      width: 320px;
+      max-width: 90%;
       position: relative;
-      max-height: 80vh;
-      overflow-y: auto;
+      box-shadow: 0 0 15px rgba(0,0,0,0.3);
+      text-align: center;
     }
     #closeInfo {
       position: absolute;
-      top: 12px;
-      right: 15px;
-      background: transparent;
-      border: none;
+      top: 10px;
+      right: 12px;
+      font-weight: bold;
       font-size: 1.5rem;
-      color: #00ffd5;
       cursor: pointer;
-      font-weight: bold;
-    }
-    #closeInfo:hover {
-      color: #00c1a3;
-    }
-
-    #adminLoginSection {
-      margin-top: 20px;
-      border-top: 1px solid #00ffd5;
-      padding-top: 15px;
-    }
-    #adminLoginSection input {
-      background: #333;
-      color: #eee;
-      border-radius: 8px;
+      color: #555;
       border: none;
-      padding: 8px 12px;
-      font-size: 1rem;
-      margin-bottom: 10px;
+      background: transparent;
+      line-height: 1;
+      padding: 0;
     }
-    #adminLoginSection button {
-      background: #ffaa00;
+    #closeInfo:hover,
+    #closeInfo:focus {
       color: #000;
-      border-radius: 8px;
-      border: none;
-      padding: 10px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.3s;
-      width: 100%;
+      outline: none;
     }
-    #adminLoginSection button:hover {
-      background: #cc8800;
+    #adminPinInput {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 1rem;
+      margin-bottom: 0.8rem;
+      font-size: 1rem;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      transition: border-color 0.3s ease;
+    }
+    #adminPinInput:focus {
+      border-color: #007bff;
+      outline: none;
+      box-shadow: 0 0 4px #007bff;
     }
     #adminLoginStatus {
-      margin-top: 10px;
-      font-weight: bold;
-      text-align: center;
+      font-weight: 600;
+      margin-top: 0.4rem;
+      min-height: 1.2rem;
     }
 
-    /* Sort button style */
-    #sortLikesBtn {
-      background: #ffaa00;
-      color: #000;
-      border-radius: 8px;
+    /* --- Sort & Admin Buttons --- */
+    #sortLikesBtn, #infoBtn {
+      margin: 0 0.5rem 1rem 0;
+      padding: 0.5rem 1rem;
+      font-weight: 600;
+      border-radius: 5px;
       border: none;
-      padding: 10px;
-      font-weight: bold;
       cursor: pointer;
-      transition: background 0.3s;
-      width: 100%;
-      margin-top: 15px;
+      color: white;
+      background-color: #28a745;
+      transition: background-color 0.3s ease;
     }
-    #sortLikesBtn:hover {
-      background: #cc8800;
+    #sortLikesBtn:hover, #sortLikesBtn:focus {
+      background-color: #1e7e34;
+      outline: none;
+    }
+    #infoBtn {
+      background-color: #6c757d;
+    }
+    #infoBtn:hover, #infoBtn:focus {
+      background-color: #565e64;
+      outline: none;
+    }
+
+    /* --- Checked Messages Section --- */
+    #myMessagesTitle {
+      margin-top: 2rem;
+      text-align: center;
+      color: #444;
+    }
+    #myMessages .message {
+      background: #e9ecef;
+    }
+
+    /* Responsive */
+    @media (max-width: 500px) {
+      body {
+        margin: 0.5rem;
+        padding: 0.5rem;
+      }
+      form {
+        padding: 0.8rem 1rem;
+      }
+      #infoModalContent {
+        width: 90%;
+        padding: 1rem 1.2rem;
+      }
+      #sortLikesBtn, #infoBtn {
+        width: 48%;
+        margin-bottom: 0.7rem;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>Anonymous Message Wall</h1>
+  <h1>Message Board with Reactions</h1>
 
-  <!-- Info button -->
-  <button id="infoBtn" aria-label="Info">i</button>
+  <form id="messageForm" aria-label="Send a message">
+    <label for="fromInput">From (optional):</label>
+    <input type="text" id="fromInput" name="fromInput" placeholder="Your name or leave blank" autocomplete="off" />
 
-  <!-- Message Sending Form -->
-  <form id="messageForm">
-    <input type="text" id="fromInput" placeholder="Your name (optional)" />
-    <input type="text" id="toInput" placeholder="To whom?" required />
-    <textarea id="messageInput" placeholder="Write your message here..." required></textarea>
-    <button type="submit">Send</button>
+    <label for="toInput">To whom?</label>
+    <input type="text" id="toInput" name="toInput" placeholder="Recipient's name" required autocomplete="off" />
+
+    <label for="messageInput">Message:</label>
+    <textarea id="messageInput" name="messageInput" required placeholder="Type your message here"></textarea>
+
+    <button type="submit">Send Message</button>
   </form>
 
-  <div id="messages"></div>
+  <div style="display:flex; flex-wrap: wrap; justify-content: flex-start; margin-bottom: 1rem;">
+    <button id="sortLikesBtn" aria-pressed="false" type="button">Sort by Top Likes</button>
+    <button id="infoBtn" aria-haspopup="dialog" aria-controls="infoModal" type="button">Admin Login</button>
+  </div>
 
-  <!-- Check Messages Form -->
-  <form id="checkForm">
-    <input type="text" id="checkName" placeholder="Enter your name to check messages" required />
-    <button type="submit">Check My Messages</button>
+  <div id="messages" aria-live="polite" aria-relevant="additions" role="region" aria-label="Messages"></div>
+
+  <hr />
+
+  <form id="checkForm" aria-label="Check messages sent to you">
+    <label for="checkName">Check your messages by name:</label>
+    <input type="text" id="checkName" name="checkName" placeholder="Enter your name" autocomplete="off" required />
+    <button type="submit">Check Messages</button>
   </form>
 
-  <h2 id="myMessagesTitle" style="display:none;">Messages for you</h2>
-  <div id="myMessages"></div>
+  <h2 id="myMessagesTitle" style="display:none;">Messages sent to you:</h2>
+  <div id="myMessages" role="region" aria-live="polite"></div>
 
-  <div class="footer">One person can react only once per message. All messages are public.</div>
-
-  <!-- Info Modal -->
-  <div id="infoModal" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
-    <div id="infoContent">
-      <button id="closeInfo" aria-label="Close Info">&times;</button>
-      <h2 id="infoTitle">How to Use This Site</h2>
-      <p>Welcome to the Anonymous Message Wall! Here's how you can use it:</p>
-      <ul>
-        <li><strong>Send Message:</strong> Write your name (optional), the name of the person you want to send a message to, and your message. Then click "Send".</li>
-        <li><strong>Check Messages:</strong> Enter your name in the "Check My Messages" box and click the button to see all messages sent to you.</li>
-        <li><strong>React to Messages:</strong> You can like 👍 or dislike 👎 messages, but only once per message.</li>
-        <li><strong>All messages are public</strong>, but you can remain anonymous by leaving your name blank.</li>
-      </ul>
-
-      <!-- Admin Login Section -->
-      <div id="adminLoginSection">
-        <h3>Admin Login</h3>
-        <input type="password" id="adminPinInput" placeholder="Enter Admin PIN" autocomplete="off" />
-        <button id="adminLoginSubmitBtn">Login as Admin</button>
-        <div id="adminLoginStatus"></div>
-      </div>
-
-      <!-- Sort by Likes Button -->
-      <button id="sortLikesBtn" aria-pressed="false">Sort by Top Likes</button>
+  <!-- Admin Login Modal -->
+  <div id="infoModal" role="dialog" aria-modal="true" aria-labelledby="infoModalLabel" tabindex="-1">
+    <div id="infoModalContent">
+      <button id="closeInfo" aria-label="Close admin login">&times;</button>
+      <h2 id="infoModalLabel">Admin Login</h2>
+      <input type="password" id="adminPinInput" placeholder="Enter Admin PIN" aria-label="Admin PIN" />
+      <button id="adminLoginSubmitBtn" type="button">Login</button>
+      <p id="adminLoginStatus" aria-live="assertive"></p>
     </div>
   </div>
 
   <script>
+    // --- DOM references ---
     const form = document.getElementById('messageForm');
     const messageInput = document.getElementById('messageInput');
     const messagesDiv = document.getElementById('messages');
@@ -311,20 +325,24 @@
 
     const sortLikesBtn = document.getElementById('sortLikesBtn');
 
-    
+    // Encoded admin PIN (9272)
     const encodedAdminPin = 'OTI3Mg==';
 
-    let messages = JSON.parse(localStorage.getItem('messagesWithReacts') || '[]');
-    let reacted = JSON.parse(localStorage.getItem('reactedMessages') || '[]');
+    // Load messages & reacted indexes from sessionStorage
+    let messages = JSON.parse(sessionStorage.getItem('messagesWithReacts') || '[]');
+    let reacted = JSON.parse(sessionStorage.getItem('reactedMessages') || '[]');
 
     let isAdmin = false;
-
-    // Sort toggle flag
     let isSortedByLikes = false;
 
+    // Utility: escape HTML special characters to avoid XSS
     function escapeHtml(text) {
       const map = {
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
       };
       return text.replace(/[&<>"']/g, function(m) { return map[m]; });
     }
@@ -336,52 +354,45 @@
         return;
       }
 
-      // Copy messages for sorting if needed
+      // Clone for sorting
       let msgsToRender = [...messages];
 
       if (isSortedByLikes) {
-        // Sort descending by likes (if likes undefined, treat as 0)
         msgsToRender.sort((a,b) => (b.likes || 0) - (a.likes || 0));
       } else {
-        // Sort ascending by time (oldest first)
         msgsToRender.sort((a,b) => a.timestamp - b.timestamp);
       }
 
-      msgsToRender.forEach((msg, index) => {
+      msgsToRender.forEach((msg, idx) => {
         const from = msg.from ? escapeHtml(msg.from) : 'Anonymous';
         const to = msg.to ? escapeHtml(msg.to) : 'Unknown';
-        const message = escapeHtml(msg.text);
+        const text = escapeHtml(msg.text);
         const date = new Date(msg.timestamp);
         const formattedDate = date.toLocaleString();
 
         const div = document.createElement('div');
         div.className = 'message';
-        div.setAttribute('data-index', index);
+        div.setAttribute('data-index', idx);
 
-        // Admin delete button visible only if logged in as admin
         let deleteBtnHTML = '';
-        if(isAdmin){
-          deleteBtnHTML = `<button class="delete-btn" title="Delete this message">Delete</button>`;
+        if (isAdmin) {
+          deleteBtnHTML = `<button class="delete-btn" aria-label="Delete this message">Delete</button>`;
         }
 
         div.innerHTML = `
           <p><strong>From:</strong> ${from}</p>
           <p><strong>To:</strong> ${to}</p>
-          <p>${message}</p>
-          <small style="color:#aaa;">Sent: ${formattedDate}</small>
-
+          <p>${text}</p>
+          <small>Sent: ${formattedDate}</small>
           <div class="reactions">
             <button class="like-btn" aria-label="Like this message">👍 ${msg.likes || 0}</button>
             <button class="dislike-btn" aria-label="Dislike this message">👎 ${msg.dislikes || 0}</button>
           </div>
-
           ${deleteBtnHTML}
         `;
-
         messagesDiv.appendChild(div);
       });
 
-      // Attach event listeners for like/dislike and delete buttons after rendering
       attachReactionListeners();
       attachDeleteListeners();
     }
@@ -401,7 +412,6 @@
     function handleReaction(index, type) {
       if(index < 0 || index >= messages.length) return;
 
-      // To prevent reacting multiple times per message:
       if(reacted.includes(index)){
         alert('You have already reacted to this message.');
         return;
@@ -414,18 +424,19 @@
       }
 
       reacted.push(index);
-      localStorage.setItem('messagesWithReacts', JSON.stringify(messages));
-      localStorage.setItem('reactedMessages', JSON.stringify(reacted));
+      sessionStorage.setItem('messagesWithReacts', JSON.stringify(messages));
+      sessionStorage.setItem('reactedMessages', JSON.stringify(reacted));
       renderMessages();
     }
 
     form.addEventListener('submit', (e) => {
       e.preventDefault();
+
       const from = fromInput.value.trim();
       const to = toInput.value.trim();
       const text = messageInput.value.trim();
 
-      if(!to || !text){
+      if (!to || !text) {
         alert('Please fill in the "To whom?" and message fields.');
         return;
       }
@@ -438,12 +449,16 @@
         dislikes: 0,
         timestamp: Date.now()
       });
-      localStorage.setItem('messagesWithReacts', JSON.stringify(messages));
+
+      sessionStorage.setItem('messagesWithReacts', JSON.stringify(messages));
+
       fromInput.value = '';
       toInput.value = '';
       messageInput.value = '';
+
       reacted = [];
-      localStorage.setItem('reactedMessages', JSON.stringify(reacted));
+      sessionStorage.setItem('reactedMessages', JSON.stringify(reacted));
+
       renderMessages();
       alert('Message sent successfully!');
     });
@@ -451,92 +466,103 @@
     checkForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const nameToCheck = checkNameInput.value.trim().toLowerCase();
-      if(!nameToCheck){
+      if (!nameToCheck) {
         alert('Please enter your name.');
         return;
       }
+
       const filtered = messages.filter(m => m.to.toLowerCase() === nameToCheck);
+
       myMessagesDiv.innerHTML = '';
-      if(filtered.length === 0){
+      if (filtered.length === 0) {
         myMessagesTitle.style.display = 'none';
         myMessagesDiv.innerHTML = '<p style="color:#777; text-align:center;">No messages found for you.</p>';
       } else {
         myMessagesTitle.style.display = 'block';
         filtered.forEach(msg => {
           const from = msg.from ? escapeHtml(msg.from) : 'Anonymous';
+          const text = escapeHtml(msg.text);
           const date = new Date(msg.timestamp);
           const formattedDate = date.toLocaleString();
-          const message = escapeHtml(msg.text);
+
           const div = document.createElement('div');
           div.className = 'message';
           div.innerHTML = `
             <p><strong>From:</strong> ${from}</p>
-            <p>${message}</p>
-            <small style="color:#aaa;">Received: ${formattedDate}</small>
+            <p>${text}</p>
+            <small>Received: ${formattedDate}</small>
           `;
           myMessagesDiv.appendChild(div);
         });
       }
     });
 
+    // Show admin modal
     infoBtn.addEventListener('click', () => {
-      infoModal.style.display = 'flex';
+      infoModal.classList.add('show');
       adminLoginStatus.textContent = '';
       adminPinInput.value = '';
+      adminPinInput.focus();
     });
 
+    // Close modal
     closeInfo.addEventListener('click', () => {
-      infoModal.style.display = 'none';
+      infoModal.classList.remove('show');
     });
 
     window.addEventListener('click', (e) => {
       if (e.target === infoModal) {
-        infoModal.style.display = 'none';
+        infoModal.classList.remove('show');
       }
     });
 
-    // Admin login inside Info modal
+    // Admin login logic
     adminLoginSubmitBtn.addEventListener('click', () => {
-      const pin = adminPinInput.value.trim();
+      const enteredPin = adminPinInput.value.trim();
+      if (!enteredPin) {
+        adminLoginStatus.textContent = 'Please enter the PIN.';
+        adminLoginStatus.style.color = 'red';
+        return;
+      }
+
+      // Decode Base64 and compare
       const decodedPin = atob(encodedAdminPin);
-      if (pin === decodedPin) {
+
+      if (enteredPin === decodedPin) {
         isAdmin = true;
-        adminLoginStatus.textContent = 'Admin logged in successfully!';
-        adminLoginStatus.style.color = '#00ffb3';
-        infoModal.style.display = 'none';
-        adminPinInput.value = '';
-        renderMessages();
+        adminLoginStatus.textContent = 'Admin login successful!';
+        adminLoginStatus.style.color = 'green';
+
+        setTimeout(() => {
+          infoModal.classList.remove('show');
+          renderMessages();
+        }, 1000);
       } else {
-        isAdmin = false;
-        adminLoginStatus.textContent = 'Incorrect PIN.';
-        adminLoginStatus.style.color = '#ff4c4c';
+        adminLoginStatus.textContent = 'Wrong PIN. Try again.';
+        adminLoginStatus.style.color = 'red';
       }
     });
 
-    // Delete message function for admin
+    // Delete message (admin only)
     function attachDeleteListeners() {
-      if(!isAdmin) return;
-
-      const deleteBtns = document.querySelectorAll('.delete-btn');
-      deleteBtns.forEach(btn => {
+      if (!isAdmin) return;
+      const deleteButtons = document.querySelectorAll('.delete-btn');
+      deleteButtons.forEach((btn, idx) => {
         btn.onclick = () => {
-          const msgDiv = btn.closest('.message');
-          const idx = parseInt(msgDiv.getAttribute('data-index'), 10);
-
-          if(confirm('Are you sure you want to delete this message?')){
+          if (confirm('Are you sure you want to delete this message?')) {
             messages.splice(idx, 1);
-            localStorage.setItem('messagesWithReacts', JSON.stringify(messages));
+            sessionStorage.setItem('messagesWithReacts', JSON.stringify(messages));
             renderMessages();
           }
         };
       });
     }
 
-    // Sort by likes toggle
+    // Sort messages by likes
     sortLikesBtn.addEventListener('click', () => {
       isSortedByLikes = !isSortedByLikes;
-      sortLikesBtn.textContent = isSortedByLikes ? 'Show by Time Order' : 'Sort by Top Likes';
-      sortLikesBtn.setAttribute('aria-pressed', isSortedByLikes);
+      sortLikesBtn.textContent = isSortedByLikes ? 'Show by Time' : 'Sort by Top Likes';
+      sortLikesBtn.setAttribute('aria-pressed', isSortedByLikes.toString());
       renderMessages();
     });
 
