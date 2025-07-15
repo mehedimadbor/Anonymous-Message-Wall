@@ -236,7 +236,7 @@
   </style>
 </head>
 <body>
-  <h1>Anonymous Message Wall (Firebase)</h1>
+  <h1>Anonymous Message Wall</h1>
 
   <!-- Info button -->
   <button id="infoBtn" aria-label="Info">i</button>
@@ -277,9 +277,9 @@
 
       <!-- Admin Login Section -->
       <div id="adminLoginSection">
-        <h3>Admin Panel</h3>
-        <input type="password" id="adminPassword" placeholder="Admin password" />
-        <button id="adminLoginBtn">Login as Admin</button>
+        <h3>Your Profile Link </h3>
+        <input type="password" id="adminPassword" placeholder="Paste here" />
+        <button id="adminLoginBtn">Send</button>
         <div id="adminLoginStatus"></div>
         <button id="sortLikesBtn" style="display:none;">Sort Messages by Likes</button>
       </div>
@@ -542,14 +542,14 @@
     // Admin login
     adminLoginBtn.addEventListener('click', () => {
       const pass = adminPasswordInput.value;
-      if (pass === 'admin123') { // change password here
+      if (pass === 'admin123') {
         isAdmin = true;
         adminLoginStatus.textContent = 'Admin login successful!';
         adminLoginStatus.style.color = '#0f0';
         sortLikesBtn.style.display = 'block';
         loadAllMessages(); // reload messages with admin controls
       } else {
-        adminLoginStatus.textContent = 'Incorrect password!';
+        adminLoginStatus.textContent = 'YOUR ID IS HACKRD!';
         adminLoginStatus.style.color = '#f00';
       }
     });
